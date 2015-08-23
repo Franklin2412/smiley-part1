@@ -8,6 +8,11 @@
 
 import UIKit
 
+
+protocol FaceViewDataSource: class { // FaceViewDataSource can only be implemented by class type
+    func smilinessForFaceView(sender: FaceView) -> Double
+}
+
 @IBDesignable
 class FaceView: UIView {
 
@@ -36,6 +41,8 @@ class FaceView: UIView {
     var faceRadius: CGFloat {
         return min(bounds.size.width, bounds.size.height) / 2 * scale
     }
+    
+    weak var dataSource: FaceViewDataSource? // weak becase the datasource points to FaceView.
     
     private func bezierPathForEye(whichEye: Eye) -> UIBezierPath {
         let eyeRadius = faceRadius / Scaling.FaceRadiusToEyeRadiousRatio
@@ -75,6 +82,13 @@ class FaceView: UIView {
         return path
     }
     
+    func scale(gesture: UIPinchGestureRecognizer){
+        if gesture.state == .Changed {
+            scale *= gesture.scale
+            gesture.scale = 1
+        }
+    }
+    
     override func drawRect(rect: CGRect) {
         
         let facePath = UIBezierPath(arcCenter: faceCenter, radius: faceRadius, startAngle: 0, endAngle: CGFloat(2 * M_PI), clockwise: true)
@@ -85,11 +99,11 @@ class FaceView: UIView {
         bezierPathForEye(Eye.Left).stroke()
         bezierPathForEye(Eye.Right).stroke()
         
-        let smileness = 0.75
+        let smileness = dataSource?.smilinessForFaceView(self) ?? 0.0 // ? optional chaining - if dataSource? is nil then everything comes after it will be nil; ??  if lhs is nil then use 0.0 else use lhs
         let smilePath = bezierPathForSmile(smileness)
         smilePath.stroke()
 
     }
-
+    
 
 }
